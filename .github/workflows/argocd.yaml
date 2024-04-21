@@ -1,0 +1,58 @@
+name: K8S YAML Update Notification And SYNC
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'k8s/**'
+    types:
+      - closed  
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  merged-and-notification:
+    if: github.event.pull_request.merged == true
+    name: Notify Discord
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Notify Discord for Approval
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_P2 }}
+        with:
+          args: 'K8S YAML has been updated in Spark Project. Please check and sync manually in Argo CD.'
+      - name: Manual Approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: sparkdoaz
+          minimum-approvals: 1   
+  
+  argocd-sync:
+    if: github.event.pull_request.merged == true
+    needs: merged-and-notification
+    name: Sync to Argo CD
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Install Argo CD CLI
+        run: |
+          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+          rm argocd-linux-amd64
+      - name: Sync to Argo CD
+        run: |
+          argocd login ${{ vars.ARGOCD_SERVER }} --username admin --password ${{ secrets.ARGOCD_PASSWORD }}
+          argocd app sync 
+
+          
