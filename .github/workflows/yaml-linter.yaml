@@ -1,0 +1,20 @@
+on:
+  push:
+
+    paths:
+      - 'k8s/**'
+
+jobs:
+  linter:
+    name: YAML Linter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Linter YAML Code
+        uses: azure/k8s-lint@v1
+        with:
+           manifests: |
+              k8s/**/*
+           kubeconformOpts: -summary
