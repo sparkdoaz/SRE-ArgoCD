@@ -8,6 +8,9 @@ jobs:
   linter:
     name: YAML Linter
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./k8s
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
